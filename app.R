@@ -36,8 +36,8 @@ ui <- dashboardPage(
   ),
   dashboardBody(
     tags$head(
-      tags$style("#shiny-notification-error {height: 500px; padding :20px; display: table-cell}" #makes taller so the error will fit
-      ),
+      # tags$style("#shiny-notification-error {height: 500px; padding :20px; display: table-cell}"),
+      tags$style("#shiny-notification-processing {background-color: #F7DC6F}"),
       singleton(
         includeScript("www/readCookie.js")
       )),
@@ -220,7 +220,7 @@ server <- function(input, output, session) {
       selected_folder <- input$dataset
       selected_project <- input$var
       
-      id <- showNotification( "Generating link...", duration = NULL, type = "default" )
+      showNotification(id = "processing",  "Generating link...", duration = NULL, type = "warning" )
 
       project_synID <- projects_namedList[[selected_project]] ### get synID of selected project
       folder_list <- get_folder_list(project_synID)
@@ -248,7 +248,7 @@ server <- function(input, output, session) {
       output$text <- renderUI({
         tags$a(href = manifest_url, manifest_url, target="_blank") ### add link to data dictionary
       })
-      removeNotification(id )
+      removeNotification(id = "processing" )
     }
 )
   
@@ -258,7 +258,7 @@ server <- function(input, output, session) {
       selected_project <- input$var
       selected_folder <- input$dataset
       
-      id <- showNotification( "Processing...", duration = NULL, type = "default" )
+      showNotification(id ="processing", "Processing...", duration = NULL, type = "warning" )
       
       project_synID <- projects_namedList[[selected_project]] ### get synID of selected project
       folder_list <- get_folder_list(project_synID)
@@ -275,7 +275,7 @@ server <- function(input, output, session) {
         output$text3 <- renderUI({
           tags$b("No previously uploaded manifest was found")
         })
-        removeNotification(id )
+        removeNotification(id = "processing" ) 
       } else {
         manifest_url <- populateModelManifest(fpath, in_template_type )
         toggle('text_div3')
@@ -283,7 +283,7 @@ server <- function(input, output, session) {
         output$text3 <- renderUI({
         tags$a(href = manifest_url, manifest_url, target="_blank")
         })
-        removeNotification(id )
+        removeNotification(id = "processing" ) 
       }
       
 
@@ -309,7 +309,7 @@ server <- function(input, output, session) {
       annotation_status <- validateModelManifest(input$csvFile$datapath, in_template_type) 
       toggle('text_div2')
       
-      id <- showNotification( "Processing...", duration = NULL, type = "default" )
+      showNotification(id = "processing", "Processing...", duration = NULL, type = "warning" )
       
       if ( length(annotation_status) != 0 ) { ## if error not empty aka there is an error
         filled_manifest <- populateModelManifest(input$csvFile$datapath, in_template_type) 
@@ -360,12 +360,12 @@ server <- function(input, output, session) {
           ) %>% formatStyle(unlist(column), 
                             backgroundColor = styleEqual(unlist(in_vals), rep("yellow", length(in_vals))) ) ## how to have multiple errors 
         })
-        removeNotification(id)
+        removeNotification(id = "processing" ) 
       } else {   
         output$text2 <- renderUI ({
           HTML("Your metadata is valid!")
         })
-        removeNotification(id)
+        removeNotification(id="processing")
         ### show submit button
         output$submit <- renderUI({
           actionButton("submitButton", "Submit to Synapse")
@@ -379,7 +379,7 @@ server <- function(input, output, session) {
   observeEvent(
     input$submitButton, {
       
-      id <- showNotification("Submitting...", duration = NULL, type = "default" )
+      showNotification(id = "processing", "Submitting...", duration = NULL, type = "warning" )
   
       ### reads in csv and adds entityID, then saves it as synapse_storage_manifest.csv in folder
       infile <- readr::read_csv(input$csvFile$datapath, na = c("", "NA"))
@@ -432,10 +432,10 @@ server <- function(input, output, session) {
       manifest_path <- paste0("synapse.org/#!Synapse:", manifest_id)
       ### if uploaded provide message
       if ( startsWith(manifest_id, "syn") == TRUE) {
-        removeNotification(id)
-        showNotification( id= "success",  paste0("Submit Manifest to: ", manifest_path), duration = NULL, type = "message")
+        removeNotification(id = "processing" ) 
+        showNotification( id = "success",  paste0("Submit Manifest to: ", manifest_path), duration = NULL, type = "message")
       } else {
-        showNotification(paste0("error ", manifest_id ), duration = NULL, type = "error")
+        showNotification( id = "error", paste0("error ", manifest_id ), duration = NULL, type = "error")
       }
       })
   
