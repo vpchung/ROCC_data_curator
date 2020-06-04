@@ -20,6 +20,7 @@ reticulate::import_from_path("ManifestGenerator", path = "HTAN-data-pipeline")
 
 source_python("synLoginFun.py")
 source_python("metadataModelFuns.py")
+source("colorpalette.R")
 
 # source("functions.R")
 
@@ -389,10 +390,8 @@ server <- function(input, output, session) {
     minimal_long <- mutate(minimal_long, project = str_wrap(project_name, width = 10))
     minimal_long$name <- as.factor(minimal_long$name)
     minimal_long$name 
-    ### add colorscale for 
-    ### try faceting
     ### reorder 
-    ### try stacked barplot
+    ### try stacked barplot once I get optional elements
     output$dash_plot <- renderPlot({
       ggplot(minimal_long, aes(x= name, y = percent_filled, fill = component)) + 
         geom_histogram(stat= "identity", position = "dodge")  + 
@@ -410,7 +409,8 @@ server <- function(input, output, session) {
               axis.text.x = element_text(angle = 0, hjust = 1),
               strip.text.x = element_text(margin = margin(.1, 0, .1, 0, "cm")),
               text = element_text(size=12),
-              legend.position = "top")
+              legend.position = "top") +
+        colScale_fill
     })
     
     removeNotification(id = "dash_gather")
