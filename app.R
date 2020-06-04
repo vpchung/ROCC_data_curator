@@ -100,11 +100,18 @@ ui <- dashboardPage(
                     inputId = "template_type",
                     label = "Template:",
                     choices = list("ScRNA-seqAssay", "BulkRNA-seqAssay", "BulkRNA-seqAlignment", "Demographics", "Diagnosis", "FamilyHistory", "Exposure", "FollowUp", "Therapy")
-## add mapping step from string to input when I have more time ##
+                    ## add mapping step from string to input when I have more time ##
                   )
+                ),
+                box(
+                  status = "primary", 
+                  solidHeader = TRUE, 
+                  width = 12, 
+                  title = "All Dataset Annotation by Component Completion",
+                  plotOutput("dash_plot", height = "500px") %>% shinycssloaders::withSpinner()
                 )
               )
-              ),
+      ),
 # Third tab item
       tabItem(tabName = "template",
               h2("Download Template for Selected Folder"),
@@ -213,16 +220,16 @@ server <- function(input, output, session) {
     showNotification(id = "processing", "Please wait while we log you in...", duration = NULL, type = "warning")
 
     ### logs in 
-    syn_login(sessionToken = input$cookie, rememberMe = FALSE)
-
+    # syn_login(sessionToken = input$cookie, rememberMe = FALSE)
+    syn_login("xengie.doan+0@sagebase.org", "Sagebase1!") ### TESTING!!! ### 
     ### welcome message
     output$title <- renderUI({
       titlePanel(h4(sprintf("Welcome, %s", syn_getUserProfile()$userName)))
     })
 
     ### updating global vars with values for projects
-    synStore_obj <<- syn_store("syn20446927", token = input$cookie)
-
+    # synStore_obj <<- syn_store("syn20446927", token = input$cookie) 
+    synStore_obj <- syn_store("syn20446927", "bc65ae7f-3b0d-4819-b5bd-3ad711d9f6a7") ### TESTING!!! ### 
     # get_projects_list(synStore_obj)
     projects_list <<- get_projects_list(synStore_obj)
 
@@ -258,6 +265,156 @@ server <- function(input, output, session) {
         selectInput(inputId = "dataset", label = "Folder:", choices = folderNames)
       }
     })
+  })
+  
+  ## FILL DASHBOARD BETA
+  observeEvent(input$cookie, {  
+    showNotification(id="dash_gather", "Gathering your Data...", duration = NULL, type = "default" )
+    ###================ gets the manifest cells table 
+    tab <- syn_tableQuery("select * from syn20446927", resultsAs='csv')
+    tab <- read.csv(tab$filepath)
+    # get just folders and match parent ID to project name
+    projects_df <- stack(projects_namedList)
+    colnames(projects_df) <- c("parentId", "project_name")
+    proj_folder_df <- inner_join(tab %>% filter(type == "folder"), projects_df)
+
+    all_folders_list <- as.character(proj_folder_df$id)
+    # 
+    # ### get manifest paths per folder
+    # folders_manifest_df <- data.frame()
+    # for (i in seq_along(all_folders_list)) {
+    #   # folders_manifest_df[]
+    #   print(i)
+    #   print(all_folders_list[i])
+    #   folders_manifest_df[i,1] <- all_folders_list[i]
+    #   path <- get_storage_manifest_path(input$cookie , all_folders_list[i]) 
+    #   if ( is.null(path) ) { ## if no manifest is uploaded 
+    #     folders_manifest_df[i,2] <- NA  
+    #   } else {
+    #     folders_manifest_df[i,2] <- path
+    #   }
+    # }
+    # 
+    ### returns list for each folder
+    all_available_manifests <- get_all_manifests(synStore_obj)
+    
+    list_of_dfs <- c()
+    for (i in seq_along(all_available_manifests)) {
+      ### if no manifest then create columns for dataframe
+      if (length(all_available_manifests[i][[1]][[3]]) == 0 ) {
+        all_available_manifests[i][[1]][[3]][1] <- NA
+        all_available_manifests[i][[1]][[3]][2] <- NA
+      }
+      df <- as.data.frame(all_available_manifests[i])
+      colnames(df) <- c("projectId", "project_name", "id", "name", "manifest_id", "manifest_name") ## IDs are for folderlevel to match other dataframe
+      # print(df)
+      list_of_dfs[[i]] <- df
+    }
+    manifest_folder_df <- bind_rows(list_of_dfs)
+    manifest_ids <- unlist(manifest_folder_df["manifest_id"])
+    names(manifest_ids) <- unlist(manifest_folder_df["name"])
+    
+    list_of_paths <- c()
+    for (folder in names(manifest_ids)) {
+      # print(folder)
+      manifest_id <- manifest_ids[folder]
+      # print(manifest_id[[1]])
+      
+      if (is.na(manifest_id)) {
+        # print(folder)
+        list_of_paths[[folder]] <- NA
+      }else{
+        # print(folder)
+        syn_entity <- syn_get(manifest_id[[1]],  downloadLocation = '/tmp/htan_data_curator/', ifcollision = "keep.both")
+        list_of_paths[[folder]] <- syn_entity$path
+      }
+    }
+    
+    df_paths <- as.data.frame(list_of_paths)
+    df_paths$name <- rownames(df_paths)
+    colnames(df_paths) <- c( "manifest_path","name")
+    
+    proj_folder_manifest <- inner_join(manifest_folder_df, df_paths)
+    proj_folder_manifest$manifest_path <- as.character(proj_folder_manifest$manifest_path)
+    
+    ### get metrics for each manifest
+    ### TO DO get required vs optional per component
+    manifest_cells_df <- data.frame()
+    for (i in seq_along(proj_folder_manifest$id)) {
+      print(i)
+      manifest_path <- proj_folder_manifest$manifest_path[i]
+      manifest_cells_df[i, 1] <- proj_folder_manifest$id[i]
+      manifest_cells_df[i, 2] <- manifest_path
+      
+      if ( !is.na(manifest_path)) {
+        manifest_df <- read.csv(manifest_path)
+        
+        # get component type 
+        manifest_cells_df[i,3] <- as.character(manifest_df$Component)[1]
+        # how to count empty cells vs all cells
+        dim_val <- dim( manifest_df[ , -which(names(manifest_df) %in% "entityId")] )
+        total_cells <- dim_val[1] * dim_val[2]
+        empty_cells <- table(is.na( manifest_df[ , -which(names(manifest_df) %in% "entityId")]))
+        per_filled <- (empty_cells[1] / total_cells )* 100
+        
+        manifest_cells_df[i,4] <- total_cells
+        manifest_cells_df[i,5] <- empty_cells[1] ## filled, empty= F
+        manifest_cells_df[i,6] <- per_filled
+      } else {
+        # print(proj_folder_manifest$id[i])
+        manifest_cells_df[i,3] <-  "no manifest"
+        manifest_cells_df[i,4] <- NA
+        manifest_cells_df[i,5] <- NA
+        manifest_cells_df[i,6] <- NA
+      }
+    }
+    
+    ### NAs to 0 but not for manifest path
+    # manifest_cells_df[,-c(2)][is.na((manifest_cells[,-c(2)]))] <- 0
+    
+    colnames(manifest_cells_df) <- c("id", "manifest_path", "component", "total_cells","filled_cells", "percent_filled")
+    
+    proj_folder_manifest_cells <- right_join(manifest_cells_df, proj_folder_manifest )
+    proj_folder_manifest_cells <<- proj_folder_manifest_cells %>% 
+      mutate('Synapse Project Folder' = id) %>% 
+      create_synapse_links( list('Synapse Project Folder' = "id") )
+    
+    minimal <- proj_folder_manifest_cells[, c("project_name", "name", "component", "total_cells","filled_cells", "percent_filled")]
+    
+    # colnames(minimal)[7:10] <- c("component", "total_cells","filled_cells", "percent_filled")
+    
+    minimal_long <- rbind(minimal[,1:6])
+    
+    ### get the wrapped project names to fit
+    minimal_long <- mutate(minimal_long, project = str_wrap(project_name, width = 10))
+    minimal_long$name <- as.factor(minimal_long$name)
+    minimal_long$name 
+    ### add colorscale for 
+    ### try faceting
+    ### reorder 
+    ### try stacked barplot
+    output$dash_plot <- renderPlot({
+      ggplot(minimal_long, aes(x= name, y = percent_filled, fill = component)) + 
+        geom_histogram(stat= "identity", position = "dodge")  + 
+        coord_flip() +
+        facet_grid(project ~ ., 
+                   scales = "free_y", space = "free_y",
+                   drop = TRUE) +
+        guides(fill = guide_legend(title = "Component")) +
+        labs(fill = "Fill legend label") +
+        xlab("Folder") +
+        ylab("Percent Annotated") +
+        theme_bw() +
+        theme(strip.text.y = element_text(face = "bold", angle = 270),
+              # legend.title = element_blank(),
+              axis.text.x = element_text(angle = 0, hjust = 1),
+              strip.text.x = element_text(margin = margin(.1, 0, .1, 0, "cm")),
+              text = element_text(size=12),
+              legend.position = "top")
+    })
+    
+    removeNotification(id = "dash_gather")
+    
   })
 
   ###shows new metadata link when get gsheets template button pressed OR updates old metadata if is exists 
