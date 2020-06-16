@@ -2,7 +2,7 @@ library(RColorBrewer)
 team.colors<-c("#D22B45",
                "#99D22B",
                "#2BD2B8",
-               "#642BD2",
+               "#4F249F",
                "#e1c558",
                "#d8c684",
                "#888336",

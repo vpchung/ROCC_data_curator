@@ -392,6 +392,7 @@ server <- function(input, output, session) {
     minimal_long$name 
     ### reorder 
     ### try stacked barplot once I get optional elements
+    ### figure out when to delete manifest
     output$dash_plot <- renderPlot({
       ggplot(minimal_long, aes(x= name, y = percent_filled, fill = component)) + 
         geom_histogram(stat= "identity", position = "dodge")  + 
