@@ -11,6 +11,7 @@ library(ggplot2)
 library(purrr)
 library(plotly)
 library(shinypop)
+library(waiter)
 
 #########global
 use_condaenv('data_curator_env', required = TRUE)
@@ -27,24 +28,16 @@ ui <- dashboardPage(
   dashboardHeader(
     titleWidth = 260,
     title = "Challenge Data Curator",
-    tags$li(class = "dropdown",
-            tags$style(".main-header {max-height: 50px}"),
-            tags$style(".main-header .logo {height: 70px; font-size: 21px; padding-top: 10px}"),
-            tags$style(".sidebar-toggle {height: 15px; padding-top: 25px !important;}"),
-            tags$style(".navbar {min-height:50px !important}"),
-            tags$style(".messages-menu {padding-top :5px}"),
-            tags$a(href = "https://www.synapse.org/#!Synapse:syn22360302", target = "_blank",
-                   tags$img(height = "40px", alt = "ROCC LOGO",
-                            src = "rocc_logo.png"))
-            )
+    tags$li(
+      class = "dropdown",
+      tags$a(href = "https://www.synapse.org/#!Synapse:syn22360302", target = "_blank",
+        tags$img(height = "40px", alt = "ROCC LOGO", src = "rocc_logo.png")
+      )
+    )
   ),
 
   dashboardSidebar(
     width = 260,
-    tags$style(
-      ".left-side, .main-sidebar {padding-top: 80px; font-weight: bold; font-size: 1.1em }
-       footer{position: absolute; padding: 18px; left:0; bottom: 0; width: 100%; background-color: #D0D6DC; color: #465362; font-size: 10px; z-index: 1000;}"
-    ),
     uiOutput("title"),
     sidebarMenu(
       id = "tabs", 
@@ -54,28 +47,21 @@ ui <- dashboardPage(
       menuItem("Submit & Validate Metadata", tabName = "upload", icon = icon("upload"))  
     ),
     HTML('<footer>
-        Supported by the Human Tumor Atlas Network <br/>
-        Powered by Sage Bionetworks
-      </footer>')
+            Supported by the Human Tumor Atlas Network <br/>
+            Powered by Sage Bionetworks
+        </footer>')
   ),
 
   dashboardBody(
+    # Loading screen
+    use_waiter(spinners = 1),
+
     tags$head(
-      tags$style(
-        HTML(".shiny-notification {
-              position:fixed;
-              bottom: 0;
-              right: 0;
-              width: 100%;
-             }
-             "),
-        "#shiny-notification-error {height: 500px; padding :20px; display: table-cell}
-        #shiny-notification-processing {background-color: #F7DC6F}
-        #shiny-notification-success {background-color : #82E0AA}"
-      ),
+      tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
       singleton(
         includeScript("www/readCookie.js")
-      )),
+      )
+    ),
     use_notiflix_report(),
 
     tabItems(
@@ -120,8 +106,8 @@ ui <- dashboardPage(
       ),
 
       # Third tab item
-      tabItem(
-        tabName = "template",
+  tabItem(
+    tabName = "template",
         h2("Download Template for Selected Folder"),
         fluidRow(
           box(
