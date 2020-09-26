@@ -19,38 +19,46 @@ reticulate::import("sys")
 source_python("synLoginFun.py")
 source_python("metadataModelFuns.py")
 
-# schematic <- reticulate::import("schematic")
-
-# source("functions.R")
 
 #########
 
 ui <- dashboardPage(
   skin = "purple",
   dashboardHeader(
-    titleWidth = 250,
-    title = "Data Curator",
+    titleWidth = 260,
+    title = "Challenge Annotator",
     tags$li(class = "dropdown",
             tags$style(".main-header {max-height: 50px}"),
-            tags$style(".main-header .logo {height: 70px; font-size: 28px; padding-top: 10px}"),
+            tags$style(".main-header .logo {height: 70px; font-size: 24px; padding-top: 10px}"),
             tags$style(".sidebar-toggle {height: 15px; padding-top: 25px !important;}"),
             tags$style(".navbar {min-height:50px !important}"),
             tags$style(".messages-menu {padding-top :5px}"),
-            tags$a(href = "https://humantumoratlas.org/", target = "_blank",
-                   tags$img(height = "40px", alt = "HTAN LOGO",
-                            src = "HTAN_text_logo.png")))
-    ),
-  dashboardSidebar(
-    width = 250,
-    tags$style(".left-side, .main-sidebar {padding-top: 80px; font-weight: bold; font-size: 1.1em } "),
-    sidebarMenu(
-    id = "tabs", 
-    menuItem("Instructions", tabName = "instructions", icon = icon("book-open")),
-    menuItem("Select your Dataset", tabName = "data", icon = icon("mouse-pointer")),
-    menuItem("Get Metadata Template", tabName = "template", icon = icon("table")),
-    menuItem("Submit & Validate Metadata", tabName = "upload", icon = icon("upload"))  
-    )
+            tags$a(href = "https://www.synapse.org/#!Synapse:syn22360302", target = "_blank",
+                   tags$img(height = "40px", alt = "ROCC LOGO",
+                            src = "rocc_logo.png"))
+            )
   ),
+
+  dashboardSidebar(
+    width = 260,
+    tags$style(
+      ".left-side, .main-sidebar {padding-top: 80px; font-weight: bold; font-size: 1.1em }
+       footer{position: absolute; padding: 18px; left:0; bottom: 0; width: 100%; background-color: #D0D6DC; color: #465362; font-size: 10px; z-index: 1000;}"
+    ),
+    uiOutput("title"),
+    sidebarMenu(
+      id = "tabs", 
+      menuItem("Instructions", tabName = "instructions", icon = icon("book-open")),
+      menuItem("Select your Dataset", tabName = "data", icon = icon("mouse-pointer")),
+      menuItem("Get Metadata Template", tabName = "template", icon = icon("table")),
+      menuItem("Submit & Validate Metadata", tabName = "upload", icon = icon("upload"))  
+    ),
+    HTML('<footer>
+        Supported by the Human Tumor Atlas Network <br/>
+        Powered by Sage Bionetworks
+      </footer>')
+  ),
+
   dashboardBody(
     tags$head(
       tags$style(
@@ -61,122 +69,128 @@ ui <- dashboardPage(
               width: 100%;
              }
              "),
-                "#shiny-notification-error {height: 500px; padding :20px; display: table-cell}
-                 #shiny-notification-processing {background-color: #F7DC6F}
-                 #shiny-notification-success {background-color : #82E0AA}"
-                 
+        "#shiny-notification-error {height: 500px; padding :20px; display: table-cell}
+        #shiny-notification-processing {background-color: #F7DC6F}
+        #shiny-notification-success {background-color : #82E0AA}"
       ),
       singleton(
         includeScript("www/readCookie.js")
       )),
-    uiOutput("title"),
-    use_notiflix_report(), 
-    tabItems(
-      # First tab content
-      tabItem(tabName = "instructions",
-              h2("Instructions for the Data Curator App:"),
-              h3("1. Go to", strong("Select your Dataset"), "tab - select your project; choose your folder and metadata template type matching your metadata."),
-              h3("2. Go to", strong("Get Metadata Template"), "tab - click on the link to generate the metadata template, then fill out and download the file as a CSV. If you already have an annotated metadata template, you may skip this step."),
-              h3("3. Go to", strong("Submit and Validate Metadata"), "tab - upload your filled CSV and validate your metadata. If you receive errors correct them, reupload your CSV, and revalidate until you receive no more errors. When your metadata is valid, you will be able to see a 'Submit' button. Press it to submit your metadata.")
-              ),
-# second tab content
-      tabItem(tabName = "data",
-              h2("Set Dataset and Metadata Template for Curation"),
-              fluidRow(
-                box(
-                  status = "primary",
-                  solidHeader = TRUE,
-                  width = 6,
-                  title = "Choose a Project and Folder: ",
-                  selectizeInput(inputId = "var", label = "Project:",
-                                 choices = "Generating..."),
-                  uiOutput('folders'),
-                  helpText("If your recently updated folder does not appear, please wait for Synapse to sync and refresh")
-                ),
-                box(
-                  status = "primary",
-                  solidHeader = TRUE,
-                  width = 6,
-                  title = "Choose a Metadata Template Type: ",
-                  selectInput(
-                    inputId = "template_type",
-                    label = "Template:",
-                    # choices = list("ScRNA-seqAssay", "BulkRNA-seqAssay", "BulkRNA-seqAlignment", "Demographics", "Diagnosis", "FamilyHistory", "Exposure", "FollowUp", "Therapy")
-                    choices = list("scRNA-seq Level 1", "Bulk RNA-seq Level 1", "Bulk RNA-seq Level 2"," Clinical Tier 1: Demographics"," Clinical Tier 1: Diagnosis"," Clinical Tier 1: FamilyHistory"," Clinical Tier 1: Exposure"," Clinical Tier 1: FollowUp"," Clinical Tier 1: Therapy")
-## add mapping step from string to input when I have more time ##
-                  )
-                )
-              )
-              ),
-# Third tab item
-      tabItem(tabName = "template",
-              h2("Download Template for Selected Folder"),
-              fluidRow(
-                box(
-                  title = "Get Link, Annotate, and Download Template as CSV",
-                  status = "primary",
-                  solidHeader = TRUE,
-                  width = 12,
-                  actionButton("download", "Click to Generate Google Sheets Template"),
-                  hidden(
-                    div(
-                      id = 'text_div',
-                      height = "100%",
-                      htmlOutput("text"),
-                      style = "font-size:18px; background-color: white; border: 1px solid #ccc; border-radius: 3px; margin: 10px 0; padding: 10px"
-                    )
-                  ),
-                  helpText("This link will leads to an empty template or your previously submitted template with new files if applicable.")
-                ) 
+    use_notiflix_report(),
 
-              )
+    tabItems(
+
+      # First tab content
+      tabItem(
+        tabName = "instructions",
+        h2("Instructions for the Data Curator App:"),
+        h3("1. Go to", strong("Select your Dataset"), "tab - select your project; choose your folder and metadata template type matching your metadata."),
+        h3("2. Go to", strong("Get Metadata Template"), "tab - click on the link to generate the metadata template, then fill out and download the file as a CSV. If you already have an annotated metadata template, you may skip this step."),
+        h3("3. Go to", strong("Submit and Validate Metadata"), "tab - upload your filled CSV and validate your metadata. If you receive errors correct them, reupload your CSV, and revalidate until you receive no more errors. When your metadata is valid, you will be able to see a 'Submit' button. Press it to submit your metadata.")
       ),
 
-# Fourth tab content
-      tabItem(tabName = "upload",
-# useShinyjs(),
-              h2("Submit & Validate a Filled Metadata Template"),
-              fluidRow(
-                box(
-                  title = "Upload Filled Metadata as a CSV",
-                  solidHeader = TRUE,
-                  status = "primary",
-                  width = 12,
-                  uiOutput('fileInput_ui')
-                ),
-                box(
-                  title = "Metadata Preview",
-                  solidHeader = TRUE,
-                  status = "primary",
-                  width = 12,
-                  DT::DTOutput("tbl"),
-                  helpText("Google spreadsheet row numbers are incremented from this table by 1")
-                ),
-                box(
-                  title = "Validate Filled Metadata",
-                  status = "primary",
-                  solidHeader = TRUE,
-                  width = 12,
-                  actionButton("validate", "Validate Metadata"),
-                  hidden(
-                    div(id = 'text_div2', 
-                        height = "100%",
-                        htmlOutput("text2"),
-                        style = "font-size:18px; background-color: white; border: 1px solid #ccc; border-radius: 3px; margin: 10px 0; padding: 10px"
-                    )
-                  ),
-                  helpText("Errors are evaluated one column at a time, if you have an error please reupload your CSV and press the validate button as needed.")
-                ),
-                box(title = "Submit Validated Metadata to Synapse",
-                        status = "primary",
-                        solidHeader = TRUE,
-                        width = 12,
-                        uiOutput("submit")
-                )
+      # Second tab content
+      tabItem(
+        tabName = "data",
+        h2("Set Dataset and Metadata Template for Curation"),
+        fluidRow(
+          box(
+            status = "primary",
+            solidHeader = TRUE,
+            width = 6,
+            title = "Choose a Project and Folder: ",
+            selectizeInput(
+              inputId = "var", label = "Project:",
+              choices = "Generating..."),
+            uiOutput('folders'),
+            helpText("If your recently updated folder does not appear, please wait for Synapse to sync and refresh.")
+          ),
+          box(
+            status = "primary",
+            solidHeader = TRUE,
+            width = 6,
+            title = "Choose a Metadata Template Type: ",
+            selectInput(
+              inputId = "template_type",
+              label = "Template:",
+              choices = list("Challenges")
+            )
+          )
+        )
+      ),
+
+      # Third tab item
+      tabItem(
+        tabName = "template",
+        h2("Download Template for Selected Folder"),
+        fluidRow(
+          box(
+            title = "Get Link, Annotate, and Download Template as CSV",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            actionButton("download", "Click to Generate Google Sheets Template"),
+            hidden(
+              div(
+                id = 'text_div',
+                height = "100%",
+                htmlOutput("text"),
+                style = "font-size:18px; background-color: white; border: 1px solid #ccc; border-radius: 3px; margin: 10px 0; padding: 10px"
+              )
+            ),
+            helpText("This link will leads to an empty template or your previously submitted template with new files if applicable.")
+          ) 
+        )
+      ),
+
+      # Fourth tab content
+      tabItem(
+        tabName = "upload",
+        h2("Submit & Validate a Filled Metadata Template"),
+        fluidRow(
+          box(
+            title = "Upload Filled Metadata as a CSV",
+            solidHeader = TRUE,
+            status = "primary",
+            width = 12,
+            uiOutput('fileInput_ui')
+          ),
+          box(
+            title = "Metadata Preview",
+            solidHeader = TRUE,
+            status = "primary",
+            width = 12,
+            DT::DTOutput("tbl"),
+            helpText("Google spreadsheet row numbers are incremented from this table by 1")
+          ),
+          box(
+            title = "Validate Filled Metadata",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            actionButton("validate", "Validate Metadata"),
+            hidden(
+              div(
+                id = 'text_div2', 
+                height = "100%",
+                htmlOutput("text2"),
+                style = "font-size:18px; background-color: white; border: 1px solid #ccc; border-radius: 3px; margin: 10px 0; padding: 10px"
+              )
+            ),
+            helpText("Errors are evaluated one column at a time, if you have an error please reupload your CSV and press the validate button as needed.")
+          ),
+          box(
+            title = "Submit Validated Metadata to Synapse",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            uiOutput("submit")
+          )
         )
       )
     ),
-    uiOutput("Next_Previous")
+    uiOutput("Next_Previous"),
+    uiOutput("diag")
   )
 )
 
@@ -196,15 +210,12 @@ server <- function(input, output, session) {
 
   ### logs in and gets list of projects they have access to
   synStore_obj <- NULL
-  # get_projects_list(synStore_obj)
+
   projects_list <- c()
-
   projects_namedList <- c()
-
   proj_folder_manifest_cells <- c()
 
   folder_synID <- NULL
-
   filename_list <- c()
   ############
 
@@ -220,15 +231,14 @@ server <- function(input, output, session) {
 
     ### welcome message
     output$title <- renderUI({
-      titlePanel(h4(sprintf("Welcome, %s", syn_getUserProfile()$userName)))
+      sidebarUserPanel(span(sprintf("Welcome, %s!", syn_getUserProfile()$userName)))
     })
 
     ### updating global vars with values for projects
-    synStore_obj <<- syn_store("syn20446927", token = input$cookie)
+    synStore_obj <<- syn_store("syn22360463", token = input$cookie)
 
     # get_projects_list(synStore_obj)
     projects_list <<- syn_store$getStorageProjects(synStore_obj)
-
     for (i in seq_along(projects_list)) {
       projects_namedList[projects_list[[i]][[2]]] <<- projects_list[[i]][[1]]
     }
@@ -236,51 +246,51 @@ server <- function(input, output, session) {
     ### updates project dropdown
     updateSelectizeInput(session, 'var', choices = names(projects_namedList))
     removeNotification(id = "processing",)
-
   })
 
 
   ###### BUTTONS STUFF  !!! remove last arrow 
-  Previous_Button=tags$div(actionButton("Prev_Tab",HTML('
+  Previous_Button = tags$div(
+    actionButton("Prev_Tab", HTML('
 <div class="col-sm-4"><i class="fa fa-angle-double-left fa-2x"></i></div>
 ')))
-  Next_Button=div(actionButton("Next_Tab",HTML('
+  Next_Button = div(
+    actionButton("Next_Tab", HTML('
 <div class="col-sm-4"><i class="fa fa-angle-double-right fa-2x"></i></div>
 ')))
 
-list_tabs <- c("instructions", "data", "template", "upload")
+  list_tabs <- c("instructions", "data", "template", "upload")
 
   output$Next_Previous <- renderUI({
-    
-    tab_list=list_tabs
-    if ( input[["tabs"]] == "upload" ){
+    tab_list = list_tabs
+    if (input[["tabs"]] == "upload" ) {
       # column(1,offset=1,Previous_Button)
-    } else if (input[["tabs"]] == "instructions" ) {
-      column(1,offset = 10,Next_Button)
+    } else if (input[["tabs"]] == "instructions") {
+      column(1, offset = 10, Next_Button)
     } else {
-      div(column(1,offset=1,Previous_Button),column(1,offset=8,Next_Button))
+      div(column(1, offset=1, Previous_Button), column(1, offset=8, Next_Button))
     }
   })
 
-  observeEvent(input$Prev_Tab,
-              {
-                tab_list=list_tabs
-                current_tab=which(tab_list==input[["tabs"]])
-                updateTabItems(session,"tabs",selected=tab_list[current_tab-1])
-              })
-
-  observeEvent(input$Next_Tab,
-              {
-                tab_list=list_tabs
-                current_tab=which(tab_list==input[["tabs"]])
-                updateTabItems(session,"tabs",selected=tab_list[current_tab+1])
-              })
-
+  observeEvent(
+    input$Prev_Tab,
+    {
+      tab_list = list_tabs
+      current_tab = which(tab_list == input[["tabs"]])
+      updateTabItems(session, "tabs", selected = tab_list[current_tab - 1])
+    })
+  observeEvent(
+    input$Next_Tab,
+    {
+      tab_list = list_tabs
+      current_tab = which(tab_list == input[["tabs"]])
+      updateTabItems(session, "tabs", selected = tab_list[current_tab + 1])
+    })
   ####### BUTTONS END
 
   ### lists folder datasets if exists in project
-  observeEvent(ignoreNULL = TRUE, ignoreInit = TRUE,
-  input$var, {
+  observeEvent(ignoreNULL = TRUE, ignoreInit = TRUE, input$var, 
+  {
     output$folders = renderUI({
       selected_project <- input$var
 
@@ -302,21 +312,20 @@ list_tabs <- c("instructions", "data", "template", "upload")
     })
   })
 
-### mapping from display name to schema name
-schema_name  <- c("ScRNA-seqAssay", "BulkRNA-seqAssay", "BulkRNA-seqAlignment", "Demographics", "Diagnosis", "FamilyHistory", "Exposure", "FollowUp", "Therapy")
-display_name <- c("scRNA-seq Level 1", "Bulk RNA-seq Level 1", "Bulk RNA-seq Level 2"," Clinical Tier 1: Demographics"," Clinical Tier 1: Diagnosis"," Clinical Tier 1: FamilyHistory"," Clinical Tier 1: Exposure"," Clinical Tier 1: FollowUp"," Clinical Tier 1: Therapy")
+  ### mapping from display name to schema name
+  schema_name  <- c("challenges")
+  display_name <- c("Challenge")
 
-schema_to_display_lookup <- data.frame(schema_name, display_name)
+  schema_to_display_lookup <- data.frame(schema_name, display_name)
 
-  ###shows new metadata link when get gsheets template button pressed OR updates old metadata if is exists 
-  observeEvent(
-    input$download, {
-
+  ### shows new metadata link when get gsheets template button pressed OR updates old metadata if is exists 
+  observeEvent(input$download, 
+  {
     selected_folder <- input$dataset
     selected_project <- input$var
 
-    ###lookup schema template name 
-    template_type_df <- schema_to_display_lookup[match(input$template_type, schema_to_display_lookup$display_name), 1, drop = F ]
+    ### lookup schema template name 
+    template_type_df <- schema_to_display_lookup[match(input$template_type, schema_to_display_lookup$display_name), 1, drop = F]
     template_type <- as.character(template_type_df$schema_name)
 
     ### progess notif
@@ -330,11 +339,9 @@ schema_to_display_lookup <- data.frame(schema_name, display_name)
       folders_namedList[folder_list[[i]][[2]]] <- folder_list[[i]][[1]]
     }
     folder_synID <- folders_namedList[[selected_folder]]
-    # showNotification( folder_synID, duration = NULL, type = "warning")
 
     ### checks if a manifest already exists
     existing_manifestID <- syn_store$updateDatasetManifestFiles(synStore_obj, folder_synID)
-    # showNotification( paste0("existing manifest: ", existing_manifestID) , duration = NULL, type = "warning")
 
     ### if there isn't an existing manifest make a new one 
     if (existing_manifestID == '') {
@@ -345,16 +352,19 @@ schema_to_display_lookup <- data.frame(schema_name, display_name)
       }
       filename_list <- names(file_namedList)
 
-
-      manifest_url <- metadata_model$getModelManifest(paste0("HTAN ", input$template_type), template_type, filenames = as.list(filename_list))
+      manifest_url <- metadata_model$getModelManifest(
+        paste0("ROCC ", input$template_type), 
+        template_type, 
+        filenames = as.list(filename_list)
+      )
       ### make sure not scalar if length of list is 1 in R
       ## add in the step to convert names later ###
 
 
       ## links shows in text box
       toggle('text_div')
+      
       ### if want a progress bar need more feedback from API to know how to increment progress bar ###
-
       output$text <- renderUI({
         tags$a(href = manifest_url, manifest_url, target = "_blank") ### add link to data dictionary when we have it ###
       })
@@ -364,8 +374,11 @@ schema_to_display_lookup <- data.frame(schema_name, display_name)
     } else {
       ### if the manifest already exists
       manifest_entity <- syn_get(existing_manifestID)
-      # prepopulatedManifestURL = mm.populateModelManifest("test_update", entity.path, component)
-      manifest_url <- metadata_model$populateModelManifest(paste0("HTAN ", input$template_type), manifest_entity$path, template_type)
+      manifest_url <- metadata_model$populateModelManifest(paste0(
+        "ROCC ", input$template_type), 
+        manifest_entity$path, 
+        template_type
+      )
       toggle('text_div3')
 
       output$text <- renderUI({
@@ -373,16 +386,17 @@ schema_to_display_lookup <- data.frame(schema_name, display_name)
       })
       removeNotification(id = "processing")
     }
-    }
-  )
+  })
 
   ### renders fileInput ui
   output$fileInput_ui <- renderUI({
-
     fileInput("file1", "Upload CSV File",
-                          accept = c('text/csv',
-                                    'text/comma-separated-values',
-                                    '.csv'))
+      accept = c(
+        'text/csv',
+        'text/comma-separated-values',
+        '.csv'
+      )
+    )
   })
 
   ### reads csv file and previews
@@ -397,9 +411,7 @@ schema_to_display_lookup <- data.frame(schema_name, display_name)
       datatable(rawData(), options = list(lengthChange = FALSE, scrollX = TRUE)
         )
     })
-
-  }
-  )
+  })
 
   ### toggles validation status when validate button pressed
   observeEvent(
@@ -409,10 +421,8 @@ schema_to_display_lookup <- data.frame(schema_name, display_name)
     template_type <- as.character(template_type_df$schema_name)
 
     annotation_status <- metadata_model$validateModelManifest(input$file1$datapath, template_type)
-    # showNotification(input$file1$datapath, duration = NULL, type = "default")
     
     toggle('text_div2')
-
     showNotification(id = "processing", "Processing...", duration = NULL, type = "default")
 
     if (length(annotation_status) != 0) {
@@ -429,55 +439,47 @@ schema_to_display_lookup <- data.frame(schema_name, display_name)
 
       ### loop through the multiple error messages
       for (i in seq_along(annotation_status)) {
-        
-
         row <- annotation_status[i][[1]][1]
         column <- annotation_status[i][[1]][2]
         message <- annotation_status[i][[1]][3]
-
         error_value <- annotation_status[i][[1]][4]
 
         ## if empty value change to NA ### not reporting the value in the cell anymore!!!
         if (unlist(error_value) == "") {
           error_value <- NA
-          
         } else {
-
           error_value <- error_value
         }
 
-        
         error_values[i] <- error_value
         column_names[i] <- column
-        str_names[i] <- paste( paste0(i, "."),
+        str_names[i] <- paste(paste0(i, "."),
                               "At row <b>", row, 
                               "</b>value <b>", error_value,
                               "</b>in ", "<b>", column, "</b>",
                               message, paste0("</b>", "<br/>"), sep = " ")
       }
 
-        
-
-
       ### format output text
       output$text2 <- renderUI({
-          tagList( 
+        tagList( 
           HTML("Your metadata is invalid according to the data model.<br/> ",
-              "You have", length(annotation_status), " errors: <br/>"),
+               "You have", length(annotation_status), " errors: <br/>"),
           HTML(str_names),
           HTML("<br/>Edit your data locally or ",
-              paste0('<a target="_blank" href="', filled_manifest, '">on Google Sheets </a>')
-              )
-
-          )
+               paste0('<a target="_blank" href="', filled_manifest, '">on Google Sheets </a>'))
+        )
       })
+
       ### update DT view with incorrect values
       ### currently only one column, requires backend support of multiple
       output$tbl <- DT::renderDT({
         datatable(rawData(),
-                    options = list(lengthChange = FALSE, scrollX = TRUE)
-          ) %>% formatStyle(unlist(column_names),
-                            backgroundColor = styleEqual( unlist(error_values), rep("yellow", length(error_values) ) )) ## how to have multiple errors
+                  options = list(lengthChange = FALSE, scrollX = TRUE)) %>% 
+        formatStyle(
+          unlist(column_names),
+          backgroundColor = styleEqual( unlist(error_values), rep("yellow", length(error_values)) )
+        ) ## how to have multiple errors
       })
       removeNotification(id = "processing")
     } else {
@@ -485,16 +487,15 @@ schema_to_display_lookup <- data.frame(schema_name, display_name)
         HTML("Your metadata is valid!")
       })
       removeNotification(id = "processing")
+
       ### show submit button
       output$submit <- renderUI({
         actionButton("submitButton", "Submit to Synapse")
       })
-
     }
-  }
-  )
+  })
 
-  ###submit button
+  ### submit button
   observeEvent(
     input$submitButton, {
 
@@ -638,11 +639,7 @@ schema_to_display_lookup <- data.frame(schema_name, display_name)
         rm("/tmp/synapse_storage_manifest.csv")
       }
     }
-
-
   })
-
-
 }
 
 
