@@ -26,10 +26,10 @@ ui <- dashboardPage(
   skin = "purple",
   dashboardHeader(
     titleWidth = 260,
-    title = "Challenge Annotator",
+    title = "Challenge Data Curator",
     tags$li(class = "dropdown",
             tags$style(".main-header {max-height: 50px}"),
-            tags$style(".main-header .logo {height: 70px; font-size: 24px; padding-top: 10px}"),
+            tags$style(".main-header .logo {height: 70px; font-size: 21px; padding-top: 10px}"),
             tags$style(".sidebar-toggle {height: 15px; padding-top: 25px !important;}"),
             tags$style(".navbar {min-height:50px !important}"),
             tags$style(".messages-menu {padding-top :5px}"),
@@ -49,7 +49,7 @@ ui <- dashboardPage(
     sidebarMenu(
       id = "tabs", 
       menuItem("Instructions", tabName = "instructions", icon = icon("book-open")),
-      menuItem("Select your Dataset", tabName = "data", icon = icon("mouse-pointer")),
+#      menuItem("Select your Dataset", tabName = "data", icon = icon("mouse-pointer")),
       menuItem("Get Metadata Template", tabName = "template", icon = icon("table")),
       menuItem("Submit & Validate Metadata", tabName = "upload", icon = icon("upload"))  
     ),
@@ -83,10 +83,10 @@ ui <- dashboardPage(
       # First tab content
       tabItem(
         tabName = "instructions",
-        h2("Instructions for the Data Curator App:"),
-        h3("1. Go to", strong("Select your Dataset"), "tab - select your project; choose your folder and metadata template type matching your metadata."),
-        h3("2. Go to", strong("Get Metadata Template"), "tab - click on the link to generate the metadata template, then fill out and download the file as a CSV. If you already have an annotated metadata template, you may skip this step."),
-        h3("3. Go to", strong("Submit and Validate Metadata"), "tab - upload your filled CSV and validate your metadata. If you receive errors correct them, reupload your CSV, and revalidate until you receive no more errors. When your metadata is valid, you will be able to see a 'Submit' button. Press it to submit your metadata.")
+        h2("Instructions for the Challenge Data Curator App:"),
+ #       h3("1. Go to", strong("Select your Dataset"), "tab - select your project; choose your folder and metadata template type matching your metadata."),
+        h3("1. Go to", strong("Get Metadata Template"), "tab - click on the link to generate the metadata template, then fill out and download the file as a CSV. If you already have an annotated metadata template, you may skip this step."),
+        h3("2. Go to", strong("Submit and Validate Metadata"), "tab - upload your filled CSV and validate your metadata. If you receive errors correct them, reupload your CSV, and revalidate until you receive no more errors. When your metadata is valid, you will be able to see a 'Submit' button. Press it to submit your metadata.")
       ),
 
       # Second tab content
