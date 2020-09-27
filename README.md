@@ -12,20 +12,22 @@
 
 <p align="center">
   <img src="https://img.shields.io/maintenance/yes/2020?color=green&style=flat-square">
-  <img src="https://img.shields.io/github/last-commit/vpchung/ROCC_data_curator?color=informational&style=flat-square">
-  <img src="https://img.shields.io/github/issues-raw/vpchung/ROCC_data_curator?color=important&style=flat-square">
+  <a href="https://github.com/vpchung/ROCC_data_curator/commits/dev"><img src="https://img.shields.io/github/last-commit/vpchung/ROCC_data_curator?color=informational&style=flat-square"></a>
+  <a href="https://github.com/vpchung/ROCC_data_curator/issues"><img src="https://img.shields.io/github/issues-raw/vpchung/ROCC_data_curator?color=important&style=flat-square"></a>
 <p>
 
 <p align="center">
-  <img src="www/screenshot.png" alt="App Preview" width=85%> 
+  <img src="www/screenshot.png" alt="App Preview" width=85%> <br/>
+  <img src="https://img.shields.io/badge/status-under--dev-lightgrey?style=flat-square">
 </p>
 
-<p align="center">
-  >> <em>Access the Shiny app <a href="https://shinypro.synapse.org/users/vchung/ROCC_data_curator/" target="_blank">here</a></em> <<
-</p>
+## Usage
+Before accessing the app, you must be logged into [Synapse](https://www.synapse.org) first. If you do not have an account yet, create one [here](https://www.synapse.org/#!RegisterAccount:0).
+
+Instructions on how to add/modify challenge metadata is available on the app once you are logged in. **Enjoy!**
 
 
-### Acknowledgements
-Challenge Data Curator would not be possible without the incredible **Informatics and Biocomputing team at Sage Bionetworks** :star2: This app is heavily based on their [HTAN Data Curator app](https://shiny.synapse.org/users/spatil/HTAN_data_curator/) ([source](https://github.com/Sage-Bionetworks/HTAN_data_curator)).
+## :star2: Acknowledgements
+**Challenge Data Curator** would not be possible without the incredible work of the Informatics and Biocomputing team at Sage Bionetworks and the efforts toward the Human Tumor Atlas Network (HTAN) grant. This app is heavily based on the [HTAN Data Curator app](https://shiny.synapse.org/users/spatil/HTAN_data_curator/) ([source](https://github.com/Sage-Bionetworks/HTAN_data_curator)).
 
 
