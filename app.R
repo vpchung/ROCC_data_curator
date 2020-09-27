@@ -495,6 +495,7 @@ server <- function(input, output, session) {
         actionButton("submitButton", "Submit to Synapse")
       })
     }
+    Sys.sleep(2)
     validate_w$hide()
   })
 
