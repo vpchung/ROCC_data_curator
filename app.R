@@ -41,10 +41,11 @@ ui <- dashboardPage(
     sidebarMenu(
       id = "tabs", 
       menuItem("Instructions", tabName = "instructions", icon = icon("book-open")),
-#      menuItem("Select your Dataset", tabName = "data", icon = icon("mouse-pointer")),
+      menuItem("Select your Dataset", tabName = "data", icon = icon("mouse-pointer")),
       menuItem("Get Metadata Template", tabName = "template", icon = icon("table")),
       menuItem("Submit & Validate Metadata", tabName = "upload", icon = icon("upload"))  
     ),
+    uiOutput("diag"),
     HTML('<footer>
             Supported by the Human Tumor Atlas Network <br/>
             Powered by Sage Bionetworks
@@ -66,9 +67,9 @@ ui <- dashboardPage(
       tabItem(
         tabName = "instructions",
         h2("Instructions for the Challenge Data Curator App:"),
- #       h3("1. Go to", strong("Select your Dataset"), "tab - select your project; choose your folder and metadata template type matching your metadata."),
-        h3("1. Go to", strong("Get Metadata Template"), "tab - click on the link to generate the metadata template, then fill out and download the file as a CSV. If you already have an annotated metadata template, you may skip this step."),
-        h3("2. Go to", strong("Submit and Validate Metadata"), "tab - upload your filled CSV and validate your metadata. If you receive errors correct them, reupload your CSV, and revalidate until you receive no more errors. When your metadata is valid, you will be able to see a 'Submit' button. Press it to submit your metadata.")
+        h3("1. Go to", strong("Select your Dataset"), "tab - select your project; choose your folder and metadata template type matching your metadata."),
+        h3("2. Go to", strong("Get Metadata Template"), "tab - click on the link to generate the metadata template, then fill out and download the file as a CSV. If you already have an annotated metadata template, you may skip this step."),
+        h3("3. Go to", strong("Submit and Validate Metadata"), "tab - upload your filled CSV and validate your metadata. If you receive errors correct them, reupload your CSV, and revalidate until you receive no more errors. When your metadata is valid, you will be able to see a 'Submit' button. Press it to submit your metadata.")
       ),
 
       # Second tab content
@@ -95,7 +96,7 @@ ui <- dashboardPage(
             selectInput(
               inputId = "template_type",
               label = "Template:",
-              choices = list("Challenges")
+              choices = list("Challenge")
             )
           )
         )
@@ -111,7 +112,7 @@ ui <- dashboardPage(
             status = "primary",
             solidHeader = TRUE,
             width = 12,
-            actionButton("download", "Click to Generate Google Sheets Template"),
+            actionButton("download", "Generate Google Sheets Template"),
             hidden(
               div(
                 id = 'text_div',
@@ -172,13 +173,13 @@ ui <- dashboardPage(
       )
     ),
     uiOutput("Next_Previous"),
-    uiOutput("diag"),
 
-    use_waiter(include_js = FALSE),
+    ## waiter loading screen
+    use_waiter(),
     waiter_show_on_load(
       html = tagList(
         img(src = "loading.gif"),
-        h3("Logging you in...")
+        h4("Logging you in...")
       ),
       color = "#424874"
     )
@@ -231,6 +232,7 @@ server <- function(input, output, session) {
     ### updates project dropdown
     updateSelectizeInput(session, 'var', choices = names(projects_namedList))
 
+    ### update waiter loading screen once login successful
     waiter_update(
       html = h3(sprintf("Welcome, %s!", syn_getUserProfile()$userName))
     )
@@ -303,14 +305,23 @@ server <- function(input, output, session) {
   })
 
   ### mapping from display name to schema name
-  schema_name  <- c("challenges")
+  schema_name  <- c("Challenge")
   display_name <- c("Challenge")
-
   schema_to_display_lookup <- data.frame(schema_name, display_name)
+
+  manifest_w <- Waiter$new(
+    html = tagList(
+      spin_dots(), br(),
+      h4("Generating link...", style = "color: #424874")
+    ),
+    color = transparent(.6)
+  )
 
   ### shows new metadata link when get gsheets template button pressed OR updates old metadata if is exists 
   observeEvent(input$download, 
   {
+    manifest_w$show()
+
     selected_folder <- input$dataset
     selected_project <- input$var
 
@@ -318,11 +329,7 @@ server <- function(input, output, session) {
     template_type_df <- schema_to_display_lookup[match(input$template_type, schema_to_display_lookup$display_name), 1, drop = F]
     template_type <- as.character(template_type_df$schema_name)
 
-    ### progess notif
-    showNotification(id = "processing", "Generating link...", duration = NULL, type = "warning")
-
     project_synID <- projects_namedList[[selected_project]] ### get synID of selected project
-
     folder_list <- syn_store$getStorageDatasetsInProject(synStore_obj, project_synID)
     folders_namedList <- c()
     for (i in seq_along(folder_list)) {
@@ -350,17 +357,11 @@ server <- function(input, output, session) {
       ### make sure not scalar if length of list is 1 in R
       ## add in the step to convert names later ###
 
-
       ## links shows in text box
       toggle('text_div')
-      
-      ### if want a progress bar need more feedback from API to know how to increment progress bar ###
       output$text <- renderUI({
         tags$a(href = manifest_url, manifest_url, target = "_blank") ### add link to data dictionary when we have it ###
       })
-
-      ### when done remove progress notif
-      removeNotification(id = "processing")
     } else {
       ### if the manifest already exists
       manifest_entity <- syn_get(existing_manifestID)
@@ -374,8 +375,8 @@ server <- function(input, output, session) {
       output$text <- renderUI({
         tags$a(href = manifest_url, manifest_url, target = "_blank")
       })
-      removeNotification(id = "processing")
     }
+    manifest_w$hide()
   })
 
   ### renders fileInput ui
