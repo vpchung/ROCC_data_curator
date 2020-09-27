@@ -22,9 +22,11 @@
 </p>
 
 ## Usage
+#### [Challenge Data Curator](https://shinypro.synapse.org/users/vchung/ROCC_data_curator/)
+
 Before accessing the app, you must be logged into [Synapse](https://www.synapse.org) first. If you do not have an account yet, create one [here](https://www.synapse.org/#!RegisterAccount:0).
 
-Instructions on how to add/modify challenge metadata is available on the app once you are logged in. **Enjoy!**
+Instructions on how to add/modify challenge metadata is available on the app.
 
 
 ## :star2: Acknowledgements
