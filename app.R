@@ -311,10 +311,10 @@ server <- function(input, output, session) {
 
   manifest_w <- Waiter$new(
     html = tagList(
-      spin_dots(), br(),
-      h4("Generating link...", style = "color: #424874")
+      spin_plus(), br(),
+      h4("Generating link...")
     ),
-    color = transparent(.6)
+    color = "rgba(66, 72, 116, .8)"
   )
 
   ### shows new metadata link when get gsheets template button pressed OR updates old metadata if is exists 
@@ -404,9 +404,19 @@ server <- function(input, output, session) {
     })
   })
 
+
+  validate_w <- Waiter$new(
+    html = tagList(
+      spin_plus(), br(),
+      h4("Validating...")
+    ),
+    color = "rgba(66, 72, 116, .8)"
+  )
+
   ### toggles validation status when validate button pressed
-  observeEvent(
-    input$validate, {
+  observeEvent(input$validate, {
+    validate_w$show()
+
     ###lookup schema template name 
     template_type_df <- schema_to_display_lookup[match(input$template_type, schema_to_display_lookup$display_name), 1, drop = F ]
     template_type <- as.character(template_type_df$schema_name)
@@ -414,7 +424,6 @@ server <- function(input, output, session) {
     annotation_status <- metadata_model$validateModelManifest(input$file1$datapath, template_type)
     
     toggle('text_div2')
-    showNotification(id = "processing", "Processing...", duration = NULL, type = "default")
 
     if (length(annotation_status) != 0) {
 
@@ -451,6 +460,10 @@ server <- function(input, output, session) {
                               message, paste0("</b>", "<br/>"), sep = " ")
       }
 
+      validate_w$update(
+        html = h3(sprintf("%d errors found", length(annotation_status)))
+      )
+
       ### format output text
       output$text2 <- renderUI({
         tagList( 
@@ -472,18 +485,17 @@ server <- function(input, output, session) {
           backgroundColor = styleEqual( unlist(error_values), rep("yellow", length(error_values)) )
         ) ## how to have multiple errors
       })
-      removeNotification(id = "processing")
     } else {
       output$text2 <- renderUI({
         HTML("Your metadata is valid!")
       })
-      removeNotification(id = "processing")
 
       ### show submit button
       output$submit <- renderUI({
         actionButton("submitButton", "Submit to Synapse")
       })
     }
+    validate_w$hide()
   })
 
   ### submit button
