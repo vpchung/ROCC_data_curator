@@ -38,7 +38,6 @@ ui <- dashboardPage(
 
   dashboardSidebar(
     width = 260,
-    uiOutput("title"),
     sidebarMenu(
       id = "tabs", 
       menuItem("Instructions", tabName = "instructions", icon = icon("book-open")),
@@ -53,9 +52,6 @@ ui <- dashboardPage(
   ),
 
   dashboardBody(
-    # Loading screen
-    use_waiter(spinners = 1),
-
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
       singleton(
@@ -106,8 +102,8 @@ ui <- dashboardPage(
       ),
 
       # Third tab item
-  tabItem(
-    tabName = "template",
+      tabItem(
+        tabName = "template",
         h2("Download Template for Selected Folder"),
         fluidRow(
           box(
@@ -176,7 +172,16 @@ ui <- dashboardPage(
       )
     ),
     uiOutput("Next_Previous"),
-    uiOutput("diag")
+    uiOutput("diag"),
+
+    use_waiter(include_js = FALSE),
+    waiter_show_on_load(
+      html = tagList(
+        img(src = "loading.gif"),
+        h3("Logging you in...")
+      ),
+      color = "#424874"
+    )
   )
 )
 
@@ -210,15 +215,9 @@ server <- function(input, output, session) {
 
   ### initial login front page items
   observeEvent(input$cookie, {
-    showNotification(id = "processing", "Please wait while we log you in...", duration = NULL, type = "warning")
 
     ### logs in 
     syn_login(sessionToken = input$cookie, rememberMe = FALSE)
-
-    ### welcome message
-    output$title <- renderUI({
-      sidebarUserPanel(span(sprintf("Welcome, %s!", syn_getUserProfile()$userName)))
-    })
 
     ### updating global vars with values for projects
     synStore_obj <<- syn_store("syn22360463", token = input$cookie)
@@ -231,7 +230,12 @@ server <- function(input, output, session) {
 
     ### updates project dropdown
     updateSelectizeInput(session, 'var', choices = names(projects_namedList))
-    removeNotification(id = "processing",)
+
+    waiter_update(
+      html = h3(sprintf("Welcome, %s!", syn_getUserProfile()$userName))
+    )
+    Sys.sleep(2)
+    waiter_hide()
   })
 
 
