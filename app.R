@@ -179,7 +179,7 @@ ui <- dashboardPage(
     waiter_show_on_load(
       html = tagList(
         img(src = "loading.gif"),
-        h4("Logging you in...")
+        h4("Retrieving Synapse information...")
       ),
       color = "#424874"
     )
@@ -188,14 +188,14 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
   ## Show message if user is not logged in to synapse
-  unauthorized <- observeEvent(input$authorized, {
-    showModal(
-      modalDialog(
-        title = "Not logged in",
-        HTML("You must log in to <a href=\"https://www.synapse.org/\">Synapse</a> to use this application. Please log in, and then refresh this page.")
-      )
-    )
-  })
+#  unauthorized <- observeEvent(input$authorized, {
+#    showModal(
+#      modalDialog(
+#        title = "Not logged in",
+#        HTML("You must log in to <a href=\"https://www.synapse.org/\">Synapse</a> to use this application. Please log in, and then refresh this page.")
+#      )
+#    )
+#  })
 
   ########### session global variables
   reticulate::source_python("synStore_Session.py")
@@ -217,27 +217,43 @@ server <- function(input, output, session) {
   ### initial login front page items
   observeEvent(input$cookie, {
 
-    ### logs in 
-    syn_login(sessionToken = input$cookie, rememberMe = FALSE)
+    ### login and update session; otherwise, notify to login to Synapse first
+    tryCatch({
+      ### logs in 
+      syn_login(sessionToken = input$cookie, rememberMe = FALSE)
 
-    ### updating global vars with values for projects
-    synStore_obj <<- syn_store("syn22360463", token = input$cookie)
+      ### updating global vars with values for projects
+      synStore_obj <<- syn_store("syn22360463", token = input$cookie)
 
-    # get_projects_list(synStore_obj)
-    projects_list <<- syn_store$getStorageProjects(synStore_obj)
-    for (i in seq_along(projects_list)) {
-      projects_namedList[projects_list[[i]][[2]]] <<- projects_list[[i]][[1]]
-    }
+      # get_projects_list(synStore_obj)
+      projects_list <<- syn_store$getStorageProjects(synStore_obj)
+      for (i in seq_along(projects_list)) {
+        projects_namedList[projects_list[[i]][[2]]] <<- projects_list[[i]][[1]]
+      }
 
-    ### updates project dropdown
-    updateSelectizeInput(session, 'var', choices = names(projects_namedList))
+      ### updates project dropdown
+      updateSelectizeInput(session, 'var', choices = names(projects_namedList))
 
-    ### update waiter loading screen once login successful
-    waiter_update(
-      html = h3(sprintf("Welcome, %s!", syn_getUserProfile()$userName))
-    )
-    Sys.sleep(2)
-    waiter_hide()
+      ### update waiter loading screen once login successful
+      waiter_update(
+        html = tagList(
+          img(src = "synapse_logo.png", height = "120px"),
+          h3(sprintf("Welcome, %s!", syn_getUserProfile()$userName))
+        )
+      )
+      Sys.sleep(2)
+      waiter_hide()
+    }, error = function(err) {
+      Sys.sleep(3)
+      waiter_update(
+        html = tagList(
+          img(src = "synapse_logo.png", height = "120px"),
+          h3("Looks like you're not logged in!"),
+          span("Please ", a("login", href = "https://www.synapse.org/#!LoginPlace:0", target = "_blank"), 
+            " to Synapse, then refresh this page.")
+        )
+      )
+    })
   })
 
 
