@@ -32,4 +32,8 @@ Instructions on how to add/modify challenge metadata is available on the app.
 ## :star2: Acknowledgements
 **Challenge Data Curator** would not be possible without the incredible work of the Informatics and Biocomputing team at Sage Bionetworks and the efforts toward the Human Tumor Atlas Network (HTAN) grant. This app is heavily based on the [HTAN Data Curator app](https://shiny.synapse.org/users/spatil/HTAN_data_curator/) ([source](https://github.com/Sage-Bionetworks/HTAN_data_curator)).
 
+#### See also:
+* [Waiter](https://shiny.john-coene.com/waiter/) - loading screens for Shiny
+* [Animizer](https://icons8.com/animizer/en/animate-static-image) - create GIF from a static image
+
 
