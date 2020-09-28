@@ -56,6 +56,7 @@ ui <- dashboardPage(
     useShinyjs(),
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+      tags$link(rel = "shortcut icon", href = "favicon.ico"),
       singleton(
         includeScript("www/readCookie.js")
       )
