@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="www/rocc_logo_black.png" height="115px">
+  <img src="img/rocc_logo_black.png" height="115px">
   <br><br>
   Challenge Data Curator
   <br>
@@ -17,7 +17,7 @@
 <p>
 
 <p align="center">
-  <img src="www/screenshot.png" alt="App Preview" width=85%> <br/>
+  <img src="img/screenshot.png" alt="App Preview" width=85%> <br/>
   <img src="https://img.shields.io/badge/status-under--dev-lightgrey?style=flat-square">
 </p>
 
