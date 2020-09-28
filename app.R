@@ -53,6 +53,7 @@ ui <- dashboardPage(
   ),
 
   dashboardBody(
+    useShinyjs(),
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
       singleton(
@@ -67,9 +68,12 @@ ui <- dashboardPage(
       tabItem(
         tabName = "instructions",
         h2("Instructions for the Challenge Data Curator App:"),
-        h3("1. Go to", strong("Select your Dataset"), "tab - select your project; choose your folder and metadata template type matching your metadata."),
-        h3("2. Go to", strong("Get Metadata Template"), "tab - click on the link to generate the metadata template, then fill out and download the file as a CSV. If you already have an annotated metadata template, you may skip this step."),
-        h3("3. Go to", strong("Submit and Validate Metadata"), "tab - upload your filled CSV and validate your metadata. If you receive errors correct them, reupload your CSV, and revalidate until you receive no more errors. When your metadata is valid, you will be able to see a 'Submit' button. Press it to submit your metadata.")
+        h3("1. ", strong("Select your Dataset")),
+        h3("Select your project; choose your folder and metadata template type matching your metadata."),
+        h3("2.", strong("Get Metadata Template")),
+        h3("Generate a new or existing metadata template, then fill out and download the file as a CSV. If you already have an annotated metadata template, you may skip this step."),
+        h3("3. ", strong("Submit and Validate Metadata")),
+        h3("Upload your populated CSV and validate your metadata. If you receive errors: correct them, reupload your CSV, and revalidate until you receive no more errors. When your metadata is valid, you will be able to see a 'Submit' button. Press it to submit your metadata.")
       ),
 
       # Second tab content
@@ -106,13 +110,25 @@ ui <- dashboardPage(
       tabItem(
         tabName = "template",
         h2("Download Template for Selected Folder"),
+        h4("Enter the name of the challenge, then click on", strong("Generate Template"), ". This will produce a link to a Google Sheets containing an empty template for the challenge (or, if metadata already exists, a previously submitted template). Export the sheet as a CSV when all required information (denoted as green columns) is given."),
+        h4("Afterward, proceed to ", strong("Submit and Validate Metadata"), " to validate and submit the updates."),
         fluidRow(
           box(
             title = "Get Link, Annotate, and Download Template as CSV",
             status = "primary",
             solidHeader = TRUE,
             width = 12,
-            actionButton("download", "Generate Google Sheets Template"),
+            fluidRow(
+              column(
+                width = 7,
+                textInput("challenge_name", label = "Name of Challenge", placeholder = "Challenge A")
+              ),
+              column(
+                width = 5,
+                br(),
+                disabled(actionButton("download", "Generate Template"))
+              )
+            ),
             hidden(
               div(
                 id = 'text_div',
@@ -120,8 +136,7 @@ ui <- dashboardPage(
                 htmlOutput("text"),
                 style = "font-size:18px; background-color: white; border: 1px solid #ccc; border-radius: 3px; margin: 10px 0; padding: 10px"
               )
-            ),
-            helpText("This link will leads to an empty template or your previously submitted template with new files if applicable.")
+            )
           ) 
         )
       ),
@@ -210,7 +225,6 @@ server <- function(input, output, session) {
 
     ### login and update session; otherwise, notify to login to Synapse first
     tryCatch({
-      ### logs in 
       syn_login(sessionToken = input$cookie, rememberMe = FALSE)
 
       ### updating global vars with values for projects
@@ -316,6 +330,11 @@ server <- function(input, output, session) {
   display_name <- c("Challenge")
   schema_to_display_lookup <- data.frame(schema_name, display_name)
 
+  ## Enable `generate` button only if challenge named is provided
+  observeEvent(input$challenge_name, {
+    toggleState("download", input$challenge_name != "" | is.null(input$challenge_name))
+  })
+
   manifest_w <- Waiter$new(
     html = tagList(
       spin_plus(), br(),
@@ -357,7 +376,7 @@ server <- function(input, output, session) {
       filename_list <- names(file_namedList)
 
       manifest_url <- metadata_model$getModelManifest(
-        paste0("ROCC ", input$template_type), 
+        input$challenge_name, 
         template_type, 
         filenames = as.list(filename_list)
       )
