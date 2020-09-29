@@ -397,7 +397,7 @@ server <- function(input, output, session) {
         manifest_entity$path, 
         template_type
       )
-      toggle('text_div3')
+      toggle('text_div')
 
       output$text <- renderUI({
         tags$a(href = manifest_url, manifest_url, target = "_blank")
