@@ -551,141 +551,54 @@ server <- function(input, output, session) {
 
     ### reads in csv 
     infile <- readr::read_csv(input$file1$datapath, na = c("", "NA"))
+    write.csv(infile, file = "./files/synapse_storage_manifest.csv", quote = FALSE, row.names = FALSE, na = "")
 
-    ### IF an assay component selected 
-    ### and adds entityID, saves it as synapse_storage_manifest.csv, then associates with synapse files 
-    if ( input$template_type %in% list("scRNA-seq Level 1", "Bulk RNA-seq Level 1", "Bulk RNA-seq Level 2") ) {
-      
-      ### make into a csv or table for assay components
-      ### already has entityId
-      if ("entityId" %in% colnames(infile)) {
-        write.csv(infile, file = "./files/synapse_storage_manifest.csv", quote = FALSE, row.names = FALSE, na = "")
+    selected_project <- input$var
+    selected_folder <- input$dataset
 
-      } else {
-        # if not get ids
-        selected_folder <- input$dataset
-        selected_project <- input$var
+    project_synID <- projects_namedList[[selected_project]] ### get synID of selected project
+    #folder_synID <- get_folder_synID(synStore_obj, project_synID, selected_folder)
 
-        project_synID <- projects_namedList[[selected_project]] ### get synID of selected project
-        folder_list <- syn_store$getStorageDatasetsInProject(synStore_obj, project_synID)
-        folders_namedList <- c()
-        for (i in seq_along(folder_list)) {
-          folders_namedList[folder_list[[i]][[2]]] <- folder_list[[i]][[1]]
-        }
+    folder_list <- syn_store$getStorageDatasetsInProject(synStore_obj, project_synID)
+    folders_namedList <- c()
+    for (i in seq_along(folder_list)) {
+      folders_namedList[folder_list[[i]][[2]]] <- folder_list[[i]][[1]]
+    }
+    folder_synID <- folders_namedList[[selected_folder]]
 
-        folder_synID <- folders_namedList[[selected_folder]]
+    ### associates metadata with data and returns manifest id
+    manifest_id <- syn_store$associateMetadataWithFiles(synStore_obj, "./files/synapse_storage_manifest.csv", folder_synID)
+    print(manifest_id)
+    manifest_path <- paste0("synapse.org/#!Synapse:", manifest_id)
 
-        file_list <- syn_store$getFilesInStorageDataset(synStore_obj, folder_synID)
-        file_namedList <- c()
-        for (i in seq_along(file_list)) {
-          file_namedList[file_list[[i]][[2]]] <- file_list[[i]][[1]]
-        }
+    ### if uploaded provided valid synID message
+    if (startsWith(manifest_id, "syn") == TRUE) {
+      removeNotification(id = "processing")
+      nx_report_success("Success!", paste0("Manifest submitted to: ", manifest_path))
+      rm("./files/synapse_storage_manifest.csv")
 
-        files_df <- stack(file_namedList)
-        colnames(files_df) <- c("entityId", "Filename")
-        files_entity <- inner_join(infile, files_df, by = "Filename")
+      ### clear inputs 
+      output$text2 <- renderUI({
+        HTML("")
+      })
+      output$submit <- renderUI({ })
 
-        write.csv(files_entity, file = "./files/synapse_storage_manifest.csv", quote = FALSE, row.names = FALSE, na = "")
-      }
-      selected_project <- input$var
-      selected_folder <- input$dataset
-
-      project_synID <- projects_namedList[[selected_project]] ### get synID of selected project
-
-      folder_list <- syn_store$getStorageDatasetsInProject(synStore_obj, project_synID)
-      folders_namedList <- c()
-      for (i in seq_along(folder_list)) {
-        folders_namedList[folder_list[[i]][[2]]] <- folder_list[[i]][[1]]
-      }
-      folder_synID <- folders_namedList[[selected_folder]]
-
-      ### associates metadata with data and returns manifest id
-      manifest_id <- syn_store$associateMetadataWithFiles(synStore_obj, "./files/synapse_storage_manifest.csv", folder_synID)
-      print(manifest_id)
-      manifest_path <- paste0("synapse.org/#!Synapse:", manifest_id)
-      ### if no error 
-      if (startsWith(manifest_id, "syn") == TRUE) {
-        removeNotification(id = "processing")
-        # showNotification(id = "success", paste0("Submit Manifest to: ", manifest_path), duration = NULL, type = "message")
-        nx_report_success("Success!", paste0("Manifest submitted to: ", manifest_path))
-        rm("./files/synapse_storage_manifest.csv")
-
-        ### clear inputs 
-        output$text2 <- renderUI({
-          HTML("")
-        })
-        output$submit <- renderUI({
-        })
-
-        ### rerenders fileinput UI
-        output$fileInput_ui <- renderUI({
-          fileInput("file1", "Upload CSV File",
-                                  accept = c('text/csv',
-                                          'text/comma-separated-values',
-                                          '.csv'))
-        })
-        ### renders empty df
-        output$tbl <- DT::renderDT(
-          datatable(as.data.frame(matrix(0, ncol = 0, nrow = 0)))
-          )
-
-      } else {
-        showNotification(id = "error", paste0("error ", manifest_id), duration = NULL, type = "error")
-        rm("/tmp/synapse_storage_manifest.csv")
-      }
-
+      ### rerenders fileinput UI
+      output$fileInput_ui <- renderUI({
+        fileInput(
+          "file1", 
+          "Upload CSV File",
+          accept = c('text/csv', 'text/comma-separated-values', '.csv')
+        )
+      })
+        
+      ### renders empty df
+      output$tbl <- DT::renderDT(
+        datatable(as.data.frame(matrix(0, ncol = 0, nrow = 0)))
+      )
     } else {
-      # showNotification( "no FIlename", duration = NULL, type = "default")
-      write.csv(infile, file = "./files/synapse_storage_manifest.csv", quote = FALSE, row.names = FALSE, na = "")
-
-      selected_project <- input$var
-      selected_folder <- input$dataset
-
-      project_synID <- projects_namedList[[selected_project]] ### get synID of selected project
-      # folder_synID <- get_folder_synID(synStore_obj, project_synID, selected_folder)
-
-      folder_list <- syn_store$getStorageDatasetsInProject(synStore_obj, project_synID)
-      folders_namedList <- c()
-      for (i in seq_along(folder_list)) {
-        folders_namedList[folder_list[[i]][[2]]] <- folder_list[[i]][[1]]
-      }
-      folder_synID <- folders_namedList[[selected_folder]]
-
-      ### associates metadata with data and returns manifest id
-      manifest_id <- syn_store$associateMetadataWithFiles(synStore_obj, "./files/synapse_storage_manifest.csv", folder_synID)
-      print(manifest_id)
-      manifest_path <- paste0("synapse.org/#!Synapse:", manifest_id)
-
-      ### if uploaded provided valid synID message
-      if (startsWith(manifest_id, "syn") == TRUE) {
-        removeNotification(id = "processing")
-        # showNotification(id = "success", paste0("Submit Manifest to: ", manifest_path), duration = NULL, type = "message")
-        nx_report_success("Success!", paste0("Manifest submitted to: ", manifest_path))
-        rm("./files/synapse_storage_manifest.csv")
-
-        ### clear inputs 
-        output$text2 <- renderUI({
-          HTML("")
-        })
-        output$submit <- renderUI({
-        })
-
-        ### rerenders fileinput UI
-        output$fileInput_ui <- renderUI({
-          fileInput("file1", "Upload CSV File",
-                                  accept = c('text/csv',
-                                          'text/comma-separated-values',
-                                          '.csv'))
-        })
-        ### renders empty df
-        output$tbl <- DT::renderDT(
-          datatable(as.data.frame(matrix(0, ncol = 0, nrow = 0)))
-          )
-
-      } else {
-        showNotification(id = "error", paste0("error ", manifest_id), duration = NULL, type = "error")
-        rm("/tmp/synapse_storage_manifest.csv")
-      }
+      showNotification(id = "error", paste0("error ", manifest_id), duration = NULL, type = "error")
+      rm("/tmp/synapse_storage_manifest.csv")
     }
   })
 }
