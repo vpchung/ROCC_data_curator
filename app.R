@@ -342,7 +342,7 @@ server <- function(input, output, session) {
       spin_plus(), br(),
       h4("Generating link...")
     ),
-    color = "rgba(66, 72, 116, .8)"
+    color = "rgba(66, 72, 116, .95)"
   )
 
   ### shows new metadata link when get gsheets template button pressed OR updates old metadata if is exists 
@@ -436,7 +436,7 @@ server <- function(input, output, session) {
       spin_plus(), br(),
       h4("Validating...")
     ),
-    color = "rgba(66, 72, 116, .8)"
+    color = "rgba(66, 72, 116, .95)"
   )
 
   ### toggles validation status when validate button pressed
@@ -494,6 +494,7 @@ server <- function(input, output, session) {
                               message, paste0("</b>", "<br/>"), sep = " ")
       }
 
+      ## update loading screen to show number of errors
       validate_w$update(
         html = h3(sprintf("%d errors found", length(annotation_status)))
       )
@@ -537,17 +538,15 @@ server <- function(input, output, session) {
   ## loading screen for submitting data
   submit_w <- Waiter$new(
     html = tagList(
-      spin_plus(), br(),
+      img(src = "loading.gif"),
       h4("Submitting...")
     ),
-    color = "rgba(66, 72, 116, .8)"
+    color = "#424874"
   )
 
   ### submit button
-  observeEvent(
-    input$submitButton, {
-
-    showNotification(id = "processing", "Submitting...", duration = NULL, type = "default")
+  observeEvent(input$submitButton, {
+    submit_w$show()
 
     ### reads in csv 
     infile <- readr::read_csv(input$file1$datapath, na = c("", "NA"))
@@ -567,20 +566,20 @@ server <- function(input, output, session) {
     folder_synID <- folders_namedList[[selected_folder]]
 
     ### associates metadata with data and returns manifest id
-    manifest_id <- syn_store$associateMetadataWithFiles(synStore_obj, "./files/synapse_storage_manifest.csv", folder_synID)
-    print(manifest_id)
+    manifest_id <- syn_store$associateMetadataWithFiles(
+      synStore_obj, 
+      "./files/synapse_storage_manifest.csv", 
+      folder_synID
+    )
     manifest_path <- paste0("synapse.org/#!Synapse:", manifest_id)
 
     ### if uploaded provided valid synID message
     if (startsWith(manifest_id, "syn") == TRUE) {
-      removeNotification(id = "processing")
       nx_report_success("Success!", paste0("Manifest submitted to: ", manifest_path))
       rm("./files/synapse_storage_manifest.csv")
 
       ### clear inputs 
-      output$text2 <- renderUI({
-        HTML("")
-      })
+      output$text2 <- renderUI({ HTML("") })
       output$submit <- renderUI({ })
 
       ### rerenders fileinput UI
@@ -597,9 +596,17 @@ server <- function(input, output, session) {
         datatable(as.data.frame(matrix(0, ncol = 0, nrow = 0)))
       )
     } else {
-      showNotification(id = "error", paste0("error ", manifest_id), duration = NULL, type = "error")
+      submit_w$update(
+        html = tagList(
+          img(src = "synapse_logo.png", height = "115px"),
+          h3("Uh oh, looks like something went wrong!"),
+          span(manifest_id, " is not a valid Synapse ID. Try again?")
+        )
+      )
       rm("/tmp/synapse_storage_manifest.csv")
     }
+    Sys.sleep(3)
+    submit_w$hide()
   })
 }
 
