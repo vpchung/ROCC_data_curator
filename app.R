@@ -45,6 +45,8 @@ ui <- dashboardPage(
       menuItem("Get Metadata Template", tabName = "template", icon = icon("table")),
       menuItem("Submit & Validate Metadata", tabName = "upload", icon = icon("upload")),
       hr(),
+      menuItem("View Current Metadata", tabName = "view", icon = icon("desktop")),
+      hr(),
       menuItem("Source Code", href = "https://github.com/vpchung/ROCC_data_curator", icon = icon("github"))
     ),
     HTML('<footer>
@@ -187,6 +189,13 @@ ui <- dashboardPage(
             uiOutput("submit")
           )
         )
+      ),
+
+      # Fifth tab
+      tabItem(
+        tabName = "view",
+        h2("View Current Challenges and Their Metadata"),
+        h4("Coming soon!")
       )
     ),
     uiOutput("Next_Previous"),
