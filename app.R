@@ -43,11 +43,13 @@ ui <- dashboardPage(
       menuItem("Instructions", tabName = "instructions", icon = icon("book-open")),
       menuItem("Select your Dataset", tabName = "data", icon = icon("mouse-pointer")),
       menuItem("Get Metadata Template", tabName = "template", icon = icon("table")),
-      menuItem("Submit & Validate Metadata", tabName = "upload", icon = icon("upload"))  
+      menuItem("Submit & Validate Metadata", tabName = "upload", icon = icon("upload")),
+      hr(),
+      menuItem("Source Code", href = "https://github.com/vpchung/ROCC_data_curator", icon = icon("github"))
     ),
-    uiOutput("diag"),
     HTML('<footer>
             Supported by the Human Tumor Atlas Network <br/>
+            (U24-CA233243-01)<br/>
             Powered by Sage Bionetworks
         </footer>')
   ),
@@ -90,15 +92,14 @@ ui <- dashboardPage(
             selectizeInput(
               inputId = "var", label = "Project:",
               choices = "Generating..."),
-            uiOutput('folders'),
-            helpText("If your recently updated folder does not appear, please wait for Synapse to sync and refresh.")
+            uiOutput('folders')
           ),
           box(
             status = "primary",
             solidHeader = TRUE,
             width = 6,
             title = "Choose a Metadata Template Type: ",
-            selectInput(
+            radioButtons(
               inputId = "template_type",
               label = "Template:",
               choices = list("Challenge")
@@ -112,7 +113,7 @@ ui <- dashboardPage(
         tabName = "template",
         h2("Download Template for Selected Folder"),
         h4("Enter the name of the challenge, then click on", strong("Generate Template"), ". This will produce a link to a Google Sheets containing an empty template for the challenge (or, if metadata already exists, a previously submitted template). Export the sheet as a CSV when all required information (denoted as green columns) is given."),
-        h4("Afterward, proceed to ", strong("Submit and Validate Metadata"), " to validate and submit the updates."),
+        h4("Afterward, proceed to ", strong("Submit and Validate Metadata")),
         fluidRow(
           box(
             title = "Get Link, Annotate, and Download Template as CSV",
@@ -250,7 +251,7 @@ server <- function(input, output, session) {
       Sys.sleep(2)
       waiter_hide()
     }, error = function(err) {
-      Sys.sleep(3)
+      Sys.sleep(2)
       waiter_update(
         html = tagList(
           img(src = "synapse_logo.png", height = "120px"),
@@ -265,46 +266,45 @@ server <- function(input, output, session) {
 
   ###### BUTTONS STUFF  !!! remove last arrow 
   Previous_Button = tags$div(
-    actionButton("Prev_Tab", HTML('
-<div class="col-sm-4"><i class="fa fa-angle-double-left fa-2x"></i></div>
-')))
+    actionButton("Prev_Tab", HTML('<div class="col-sm-4">
+        <i class="fa fa-angle-double-left fa-2x"></i>
+      </div>')
+    )
+  )
   Next_Button = div(
-    actionButton("Next_Tab", HTML('
-<div class="col-sm-4"><i class="fa fa-angle-double-right fa-2x"></i></div>
-')))
+    actionButton("Next_Tab", HTML('<div class="col-sm-4">
+        <i class="fa fa-angle-double-right fa-2x"></i>
+      </div>')
+    )
+  )
 
   list_tabs <- c("instructions", "data", "template", "upload")
 
   output$Next_Previous <- renderUI({
     tab_list = list_tabs
     if (input[["tabs"]] == "upload" ) {
-      # column(1,offset=1,Previous_Button)
+      # column(1, offset = 1, Previous_Button)
     } else if (input[["tabs"]] == "instructions") {
       column(1, offset = 10, Next_Button)
     } else {
-      div(column(1, offset=1, Previous_Button), column(1, offset=8, Next_Button))
+      div(column(1, offset = 1, Previous_Button), column(1, offset = 8, Next_Button))
     }
   })
 
-  observeEvent(
-    input$Prev_Tab,
-    {
-      tab_list = list_tabs
-      current_tab = which(tab_list == input[["tabs"]])
-      updateTabItems(session, "tabs", selected = tab_list[current_tab - 1])
-    })
-  observeEvent(
-    input$Next_Tab,
-    {
-      tab_list = list_tabs
-      current_tab = which(tab_list == input[["tabs"]])
-      updateTabItems(session, "tabs", selected = tab_list[current_tab + 1])
-    })
+  observeEvent(input$Prev_Tab, {
+    tab_list = list_tabs
+    current_tab = which(tab_list == input[["tabs"]])
+    updateTabItems(session, "tabs", selected = tab_list[current_tab - 1])
+  })
+  observeEvent(input$Next_Tab, {
+    tab_list = list_tabs
+    current_tab = which(tab_list == input[["tabs"]])
+    updateTabItems(session, "tabs", selected = tab_list[current_tab + 1])
+  })
   ####### BUTTONS END
 
   ### lists folder datasets if exists in project
-  observeEvent(ignoreNULL = TRUE, ignoreInit = TRUE, input$var, 
-  {
+  observeEvent(ignoreNULL = TRUE, ignoreInit = TRUE, input$var, {
     output$folders = renderUI({
       selected_project <- input$var
 
@@ -336,6 +336,7 @@ server <- function(input, output, session) {
     toggleState("download", input$challenge_name != "" | is.null(input$challenge_name))
   })
 
+  # loading screen for template link generation
   manifest_w <- Waiter$new(
     html = tagList(
       spin_plus(), br(),
@@ -345,8 +346,7 @@ server <- function(input, output, session) {
   )
 
   ### shows new metadata link when get gsheets template button pressed OR updates old metadata if is exists 
-  observeEvent(input$download, 
-  {
+  observeEvent(input$download, {
     manifest_w$show()
 
     selected_folder <- input$dataset
@@ -367,7 +367,7 @@ server <- function(input, output, session) {
     ### checks if a manifest already exists
     existing_manifestID <- syn_store$updateDatasetManifestFiles(synStore_obj, folder_synID)
 
-    ### if there isn't an existing manifest make a new one 
+    ### if there isn't an existing manifest, make a new one 
     if (existing_manifestID == '') {
       file_list <- syn_store$getFilesInStorageDataset(synStore_obj, folder_synID)
       file_namedList <- c()
@@ -392,8 +392,8 @@ server <- function(input, output, session) {
     } else {
       ### if the manifest already exists
       manifest_entity <- syn_get(existing_manifestID)
-      manifest_url <- metadata_model$populateModelManifest(paste0(
-        "ROCC ", input$template_type), 
+      manifest_url <- metadata_model$populateModelManifest(
+        input$challenge_name, 
         manifest_entity$path, 
         template_type
       )
@@ -423,15 +423,14 @@ server <- function(input, output, session) {
   })
 
   ### renders in DT for preview 
-  observeEvent(
-  rawData(), {
+  observeEvent(rawData(), {
     output$tbl <- DT::renderDT({
       datatable(rawData(), options = list(lengthChange = FALSE, scrollX = TRUE)
         )
     })
   })
 
-
+  ## loading screen for validating metadata
   validate_w <- Waiter$new(
     html = tagList(
       spin_plus(), br(),
@@ -444,18 +443,26 @@ server <- function(input, output, session) {
   observeEvent(input$validate, {
     validate_w$show()
 
-    ###lookup schema template name 
-    template_type_df <- schema_to_display_lookup[match(input$template_type, schema_to_display_lookup$display_name), 1, drop = F ]
+    ### lookup schema template name 
+    template_type_df <- schema_to_display_lookup[match(input$template_type, schema_to_display_lookup$display_name), 1, drop = F]
     template_type <- as.character(template_type_df$schema_name)
-
-    annotation_status <- metadata_model$validateModelManifest(input$file1$datapath, template_type)
     
     toggle('text_div2')
 
+    challenge_name <- input$challenge_name
+    if (is.null(challenge_name) || challenge_name == "") {
+      challenge_name <- "Challenge"
+    }
+
+    annotation_status <- metadata_model$validateModelManifest(input$file1$datapath, template_type)
     if (length(annotation_status) != 0) {
 
       ## if error not empty aka there is an error
-      filled_manifest <- metadata_model$populateModelManifest(paste0("HTAN ", input$template_type), input$file1$datapath, template_type)
+      filled_manifest <- metadata_model$populateModelManifest(
+        challenge_name, 
+        input$file1$datapath, 
+        template_type
+      )
 
       ### create list of string names for the error messages if there is more than one at a time 
       str_names <- c()
@@ -525,6 +532,16 @@ server <- function(input, output, session) {
     Sys.sleep(2)
     validate_w$hide()
   })
+
+
+  ## loading screen for submitting data
+  submit_w <- Waiter$new(
+    html = tagList(
+      spin_plus(), br(),
+      h4("Submitting...")
+    ),
+    color = "rgba(66, 72, 116, .8)"
+  )
 
   ### submit button
   observeEvent(
