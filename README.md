@@ -7,18 +7,18 @@
 </h1>
 
 <h4 align="center">
-  A Shiny app to add and update challenge metadata on <a href="https://www.synapse.org/#!Synapse:syn22360302/" target="_blank">Synapse</a>.
+  A Shiny app prototype to add and update challenge metadata on <a href="https://www.synapse.org/#!Synapse:syn22360302/" target="_blank">Synapse</a>.
 </h4>
 
 <p align="center">
-  <img src="https://img.shields.io/maintenance/yes/2020?color=green&style=flat-square">
+  <img src="https://img.shields.io/maintenance/no/2020?style=flat-square">
   <a href="https://github.com/vpchung/ROCC_data_curator/commits/dev"><img src="https://img.shields.io/github/last-commit/vpchung/ROCC_data_curator?color=informational&style=flat-square"></a>
   <a href="https://github.com/vpchung/ROCC_data_curator/issues"><img src="https://img.shields.io/github/issues-raw/vpchung/ROCC_data_curator?color=important&style=flat-square"></a>
 <p>
 
 <p align="center">
   <img src="img/screenshot.png" alt="App Preview" width=85%> <br/>
-  <img src="https://img.shields.io/badge/status-under--dev-lightgrey?style=flat-square">
+  <img src="https://img.shields.io/badge/status-prototype--complete-lightgrey?style=flat-square">
 </p>
 
 ## Usage
